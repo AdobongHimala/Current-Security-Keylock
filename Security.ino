@@ -21,8 +21,8 @@ const int buzzerPin = A3;
 //----------------------definitions----------------------
 
 #define pwLength 5
-char customkey;
-char Data[pwLength];
+char keyPress;
+char input[pwLength];
 char Master[pwLength] = "1234";
 char newMaster[pwLength];
 
@@ -59,10 +59,10 @@ int attempt = 0;
 
 int i;
 int npwIndex = 0;
-int ppwIndex = 0;
-int m = 0;
-int o = 0;
-int h = 0;
+int m = 0; // delete
+int o = 0; // delete
+int h = 0; // delete
+int k = 0;
 
 //Buzzer intervals
 unsigned long currentMillis = millis();
@@ -78,160 +78,236 @@ void setup() {
   pinMode(LED3, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
   pinMode(resetButton, INPUT_PULLUP);
-  Serial.begin(9600);
+  pinMode(13, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+  Serial.begin(9600); // delete
 }
 
 
 void loop() {
-  customkey = customKeypad.getKey();
+  keyPress = customKeypad.getKey();
   if (digitalRead(resetButton) == LOW) {
     softReset();
   }
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-
-  while(h == 0){
-    Serial.println("Enter Password : ");
-    h++;
-  }
+ 
+  while(h == 0){ // delete
+    Serial.println("Enter Password : "); // delete
+    h++; // delete
+  } // delete
   if (mode == 1) {
-    lcd.print("Enter Password:");
-    if (customkey) {
-      if (customkey != 'D' && customkey != 'A' && customkey != 'B' && customkey != 'C') {
-        Data[pwIndex] = customkey;
-        lcd.setCursor(pwIndex, 1);
-        lcd.print("*");
-        Serial.print(customkey);
-        Serial.print("   ");
-        Serial.println(Data);
-        pwIndex++;
-      } else if (customkey == 'D') {
-        mode *= -1;
-        i = 0;
-        m = 0;
-        o = 0;
-        clearData();
-        Serial.println("Confirm Password:");
+    if (pwIndex < pwLength - 1){
+      lcd.print("Enter Password:");
+      if (keyPress) {
+        if (keyPress != 'D' && keyPress != 'A' && keyPress != 'B' && keyPress != 'C') {
+          input[pwIndex] = keyPress;
+          lcd.print("____");
+          lcd.print(input);
+          Serial.println(input); // delete
+          pwIndex++;
+        } else if (keyPress == 'D') {
+          mode *= -1;
+          i = 0;
+          m = 0;
+          o = 0;
+          clearInput();
+          Serial.println("Confirm Password:"); // delete
+        } else if (keyPress == 'A' && pwIndex > 0){
+            pwIndex--;
+            input[pwIndex] = 0;
+            Serial.println(input); // delete
+        }
       }
     }
-
     if (pwIndex == pwLength - 1) {
-      lcd.clear();
-      if (!strcmp(Data, Master)) {
-        lcd.print("Access Granted");
-        Serial.println("Access Granted");
-        attempt = 0;
-        delay(2000);
-        lcd.clear();
-      } else {
-        lcd.print("Incorrect");
-        Serial.println("Incorrect");
-        digitalWrite(buzzerPin, HIGH);
-        delay(100);
-        digitalWrite(buzzerPin, LOW);
-        delay(100);
-        digitalWrite(buzzerPin, HIGH);
-        delay(100);
-        digitalWrite(buzzerPin, LOW);
-        attempt++;
-        delay(700);
+      if(keyPress){
+        if (keyPress == 'B'){
+          lcd.clear();
+          if (!strcmp(input, Master)) {
+            lcd.print("Welcome Back");
+            lcd.setCursor(7, 1);
+            lcd.print("Master");
+            Serial.println("Access Granted");
+            attempt = 0;
+            delay(2000);
+            lcd.clear();
+          } else {
+            lcd.print("Incorrect");
+            Serial.println("Incorrect");
+            digitalWrite(buzzerPin, HIGH);
+            delay(100);
+            digitalWrite(buzzerPin, LOW);
+            delay(100);
+            digitalWrite(buzzerPin, HIGH);
+            delay(100);
+            digitalWrite(buzzerPin, LOW);
+            attempt++;
+            delay(700);
+          }
+          lcd.clear();
+          clearInput();
+          h = 0;
+        }
+        else if (keyPress == 'A' && pwIndex > 0){
+            pwIndex--;
+            input[pwIndex] = 0;
+            Serial.println(input); // delete
+        }
+        else if (keyPress == 'D') {
+          mode *= -1;
+          i = 0;
+          m = 0;
+          o = 0;
+          clearInput();
+          Serial.println("Confirm Password:"); // delete
+        }
       }
-      lcd.clear();
-      clearData();
-      h = 0;
     }
-
-    breachShield(attempt);
   }
 
   else if (mode == -1) {
     lcd.setCursor(0, 0);
     lcd.clear();
-    lcd.print("Confirm Password");
+    lcd.print("Enter Password:");
+    if (k == 0){
     if (pwIndex < pwLength - 1) {
-      if (customkey) {
-        if (customkey == 'D') {
+      if (keyPress) {
+        if (keyPress == 'D') {
           mode *= -1;
           h = 0;
-          pwIndex = 0;
-        } else if (customkey != 'A' && customkey != 'B' && customkey != 'C' && customkey != 'D') {
-          Data[pwIndex] = customkey;
+          clearInput();
+        } else if( keyPress == 'A'){
+          if (pwIndex > 0){
+            pwIndex--;
+            input[pwIndex] = 0;
+            Serial.println(input); // delete
+          }
+        } else if (keyPress != 'A' && keyPress != 'B' && keyPress != 'C' && keyPress != 'D') {
+          input[pwIndex] = keyPress;
           lcd.setCursor(pwIndex, 1);
           lcd.print("*");
-          Serial.println(customkey);
-          Serial.println(Data);
+          Serial.println(keyPress);
+          Serial.println(input);
           pwIndex++;
-          Serial.println(pwIndex);
         }
       }
     }
 
-    if (pwIndex == 4) {
-      m++;
-      if (m == 1) {
-        delay(1000);
-        Serial.println("Set new Password");
-        npwIndex = 0;
-        customkey = 0;
-      }
-      if (strcmp(Data, Master)) {
-        lcd.clear();
-        lcd.print("Incorrect");
-        Serial.println("Mali");
-        digitalWrite(buzzerPin, HIGH);
-        delay(100);
-        digitalWrite(buzzerPin, LOW);
-        delay(100);
-        digitalWrite(buzzerPin, HIGH);
-        delay(100);
-        digitalWrite(buzzerPin, LOW);
-        delay(100);
-        clearData();
-      }
-      if (!strcmp(Data, Master)){
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Set new Password");
-        lcd.setCursor(0, 1);
-        if (npwIndex != pwLength - 1) {
-          if (customkey) {
-            if (customkey != 'A' && customkey != 'B' && customkey != 'C' && customkey != 'D') {
-              newMaster[npwIndex] = customkey;
-              lcd.setCursor(npwIndex, 1);
-              lcd.print(customkey);
-              Serial.println(customkey);
-              Serial.print("NewMaser");
-              Serial.println(newMaster);
-              npwIndex++;
-            }
-            if (customkey == 'D') {
-              mode *= -1;
-              clearData();
-              while (npwIndex != 0) {
-                newMaster[npwIndex--] = 0;
-              }
-            }
+      if (pwIndex == pwLength - 1) {
+        if (keyPress == 'A'){
+          pwIndex--;
+          input[pwIndex] = 0;
+          Serial.println(input); // delete
+        }
+        if (keyPress == 'D') {
+          mode = 1;
+          h = 0;
+          clearInput();
+        }
+        if (keyPress == 'B'){
+          if (strcmp(input, Master)) {
+            lcd.clear();
+            lcd.print("Incorrect");
+            Serial.println("Mali"); // delete
+            digitalWrite(buzzerPin, HIGH);
+            delay(100);
+            digitalWrite(buzzerPin, LOW);
+            delay(100);
+            digitalWrite(buzzerPin, HIGH);
+            delay(100);
+            digitalWrite(buzzerPin, LOW);
+            delay(100);
+            attempt++;
+            clearInput();
+          }
+          if (!strcmp(input, Master)){
+            k = 1;
+            attempt = 0;
+            Serial.println("K is now 1");
           }
         }
-        if (npwIndex == pwLength - 1) {
-          for (int o = 0; o < 4 ; o++) {
-            Master[o] = newMaster[o];
-            Serial.print("New Master Set : "); 
-            Serial.println(Master);
+      }
+    } else if (k == 1){
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Set new Password");
+      lcd.setCursor(0, 1);
+      lcd.print("____");
+      m++;
+      if (m == 1) {
+        npwIndex = 0;
+        Serial.print("Set new Password"); // delete
+        Serial.println(npwIndex);
+        keyPress = 0;
+      }
+
+      if (npwIndex < pwLength - 1) {
+        if (keyPress){
+          if (keyPress != 'A' && keyPress != 'B' && keyPress != 'C' && keyPress != 'D') {
+            newMaster[npwIndex] = keyPress;
+            lcd.print(newMaster);
+            Serial.println(keyPress); // delete
+            Serial.print("NewMaster"); // delete
+            Serial.println(newMaster); // delete
+            npwIndex++;
           }
-          lcd.setCursor(0, 0);
-          lcd.print("New Password Set");
-          Serial.print("New Password Set : ");
-          Serial.println(Master);
-          mode = 1;
-          npwIndex = 0;
-          softReset();
+          if (keyPress == 'A') {
+            if (npwIndex > 0){
+              npwIndex--;
+              newMaster[npwIndex] = 0;
+              Serial.print("NewMaster"); // delete
+              Serial.println(newMaster); // delete
+            }
+          }
+          if (keyPress == 'D') {
+            mode = 1;
+            h = 0;
+            clearInput();
+            while (npwIndex != 0) {
+              newMaster[npwIndex--] = 0;
+            }
+            k = 0;
+          }
+        }
+      }         
+      if (npwIndex == pwLength - 1) {
+        if (keyPress){
+          if (keyPress == 'A'){
+            npwIndex--;
+            newMaster[npwIndex] = 0;
+            Serial.print("NewMaster"); // delete
+            Serial.println(newMaster); // delete
+          }
+          if (keyPress == 'D') {
+            mode *= -1;
+            k = 0;
+            h = 0;
+            clearInput();
+            while (npwIndex != 0) {
+              newMaster[npwIndex--] = 0;
+            }
+            
+          }
+          if (keyPress == 'B'){
+            for (int o = 0; o < 4 ; o++) {
+              Master[o] = newMaster[o];
+            }
+            lcd.setCursor(0, 0);
+            lcd.print("New Password Set");
+            Serial.print("New Password Set : "); // delete
+            Serial.println(Master); // delete
+            mode = 1;
+            k = 0;
+            h = 0;
+            npwIndex = 0;
+            clearInput();
+            
+          }
         }
       }
       
     }
   }
+  breachShield(attempt);
 }
 
 void breachShield(int attempt) {
@@ -247,7 +323,7 @@ void breachShield(int attempt) {
     digitalWrite(LED2, HIGH);
   } else if (attempt == 3) {
     digitalWrite(LED3, HIGH);
-    Serial.println("LOCKED");
+    Serial.println("LOCKED"); // delete
   }
 
   while (attempt == 3) {
@@ -274,17 +350,22 @@ void breachShield(int attempt) {
 void softReset() {
   attempt = 0;
   breachShield(attempt);
-  clearData();
+  clearInput();
   mode = 1;
+  m = 0;
+  h = 0;
+  k = 0;
+  o = 0;
+
   lcd.clear();
   delay(2000);
-  Serial.println("RESET COMPLETED");
+  Serial.println("RESET COMPLETED"); // delete
   lcd.print("RESET COMPLETE");
 }
 
-void clearData() {
+void clearInput() {
   while (pwIndex != 0) {
-    Data[pwIndex--] = 0;
+    input[pwIndex--] = 0;
   }
   return;
 }
